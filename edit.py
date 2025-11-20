@@ -1,10 +1,13 @@
 import os
 import tempfile
 import time
-from datetime import datetime, date 
+from datetime import datetime, date
 import telebot
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardRemove
 from pymongo import MongoClient
+from flask import Flask, request
+
+app = Flask(__name__)
 
 BOT_TOKEN = os.getenv('BOT_TOKEN')
 MONGODB_URI = os.getenv('MONGODB_URI')
@@ -107,7 +110,6 @@ def check_membership(user_id):
                     return False
             except Exception as e:
                 print(f"Error checking membership for channel {channel['id']}: {e}")
-                
                 return False
         return True
     except Exception as e:
@@ -189,22 +191,13 @@ def start_command(message):
     first_name = message.from_user.first_name
     last_name = message.from_user.last_name
     
-    print(f"User {user_id} ({first_name}) started the bot")
-    
-    # Save user to database
     save_user(user_id, username, first_name, last_name)
     update_user_activity(user_id)
     
-    # Send log to channel (only for new users)
     if user_id not in logged_users:
         send_user_log(user_id, username, first_name, last_name)
     
-    # Debug: Check membership status
-    membership_status = check_membership(user_id)
-    print(f"Membership check for {user_id}: {membership_status}")
-    
-    if membership_status:
-        # User is member of all channels
+    if check_membership(user_id):
         welcome_text = f"""✨ **Welcome {first_name}!** ✨
 
 🤖 **Welcome to the File Editing Bot!**
@@ -228,7 +221,6 @@ def start_command(message):
         bot.send_message(message.chat.id, welcome_text, parse_mode='Markdown')
         clear_user_session(user_id)
     else:
-        # User needs to join channels
         join_text = """📢 **Channel Membership Required** 
 
 To use this amazing bot, you need to join our channels first! 
@@ -240,7 +232,6 @@ To use this amazing bot, you need to join our channels first!
 
 👇 **Join both channels below and then click Verify:**"""
         bot.send_message(message.chat.id, join_text, parse_mode='Markdown', reply_markup=create_join_keyboard())
-        print(f"User {user_id} needs to join channels")
 
 @bot.callback_query_handler(func=lambda call: call.data == "verify")
 def verify_callback(call):
@@ -491,14 +482,6 @@ def broadcast_command(message):
     else:
         bot.send_message(message.chat.id, "❌ **Please reply to a message to broadcast it.** \n\n💡 *Example: Reply to any message with /broadcast*", parse_mode='Markdown')
 
-if __name__ == "__main__":
-    print("🤖 Bot is starting...")
-
-from flask import Flask, request
-import os
-
-app = Flask(__name__)
-
 @app.route('/')
 def home():
     return "🤖 Bot is running!"
@@ -513,15 +496,17 @@ def webhook():
     else:
         return 'Invalid content type', 400
 
-# Get port from environment variable or default to 10000
 port = int(os.environ.get("PORT", 10000))
 
 if __name__ == "__main__":
     print("🤖 Bot is starting...")
-    bot.remove_webhook()
     
-    webhook_url = f"https://file-edit-zygb.onrender.com/webhook"
+    # Remove any existing webhook
+    bot.remove_webhook()
+    time.sleep(1)
+    
+    webhook_url = "https://file-edit-zygb.onrender.com/webhook"
     bot.set_webhook(url=webhook_url)
     
-    print(f"Webhook set to: {webhook_url}")
+    print(f"✅ Webhook set to: {webhook_url}")
     app.run(host="0.0.0.0", port=port)
