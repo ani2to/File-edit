@@ -101,11 +101,17 @@ def get_all_users():
 def check_membership(user_id):
     try:
         for channel in CHANNELS:
-            member = bot.get_chat_member(channel['id'], user_id)
-            if member.status in ['left', 'kicked']:
+            try:
+                member = bot.get_chat_member(channel['id'], user_id)
+                if member.status in ['left', 'kicked']:
+                    return False
+            except Exception as e:
+                print(f"Error checking membership for channel {channel['id']}: {e}")
+                
                 return False
         return True
-    except:
+    except Exception as e:
+        print(f"Error in check_membership: {e}")
         return False
 
 def send_user_log(user_id, username, first_name, last_name):
@@ -127,8 +133,8 @@ def send_user_log(user_id, username, first_name, last_name):
 
 def create_join_keyboard():
     keyboard = InlineKeyboardMarkup()
-    keyboard.add(InlineKeyboardButton("📢 Join SPBotz", url=CHANNELS[0]['link']))
-    keyboard.add(InlineKeyboardButton("📢 Join SPBotz 2", url=CHANNELS[1]['link']))
+    keyboard.add(InlineKeyboardButton("📢 Join ", url=CHANNELS[0]['link']))
+    keyboard.add(InlineKeyboardButton("📢 Join ", url=CHANNELS[1]['link']))
     keyboard.add(InlineKeyboardButton("✅ Verify Membership", callback_data="verify"))
     return keyboard
 
@@ -183,13 +189,22 @@ def start_command(message):
     first_name = message.from_user.first_name
     last_name = message.from_user.last_name
     
+    print(f"User {user_id} ({first_name}) started the bot")
+    
+    # Save user to database
     save_user(user_id, username, first_name, last_name)
     update_user_activity(user_id)
     
+    # Send log to channel (only for new users)
     if user_id not in logged_users:
         send_user_log(user_id, username, first_name, last_name)
     
-    if check_membership(user_id):
+    # Debug: Check membership status
+    membership_status = check_membership(user_id)
+    print(f"Membership check for {user_id}: {membership_status}")
+    
+    if membership_status:
+        # User is member of all channels
         welcome_text = f"""✨ **Welcome {first_name}!** ✨
 
 🤖 **Welcome to the File Editing Bot!**
@@ -213,6 +228,7 @@ def start_command(message):
         bot.send_message(message.chat.id, welcome_text, parse_mode='Markdown')
         clear_user_session(user_id)
     else:
+        # User needs to join channels
         join_text = """📢 **Channel Membership Required** 
 
 To use this amazing bot, you need to join our channels first! 
@@ -224,6 +240,7 @@ To use this amazing bot, you need to join our channels first!
 
 👇 **Join both channels below and then click Verify:**"""
         bot.send_message(message.chat.id, join_text, parse_mode='Markdown', reply_markup=create_join_keyboard())
+        print(f"User {user_id} needs to join channels")
 
 @bot.callback_query_handler(func=lambda call: call.data == "verify")
 def verify_callback(call):
