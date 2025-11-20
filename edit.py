@@ -1,6 +1,8 @@
 import os
 import tempfile
 import time
+from flask import Flask
+from threading import Thread
 from datetime import datetime, date
 import telebot
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardRemove
@@ -478,9 +480,38 @@ def broadcast_command(message):
         bot.send_message(LOG_CHANNEL_ID, log_message, parse_mode='Markdown')
     else:
         bot.send_message(message.chat.id, "❌ **Please reply to a message to broadcast it.** \n\n💡 *Example: Reply to any message with /broadcast*", parse_mode='Markdown')
+if __name__ == "__main__":
+    
+# ===== FLASK KEEP-ALIVE SETUP =====
+app = Flask(__name__)
+
+@app.route('/')
+def home():
+    return "🤖 Bot is running healthy!"
+
+@app.route('/health')
+def health():
+    return {"status": "healthy", "users_online": len(user_data), "timestamp": datetime.now().isoformat()}
+
+def run_flask():
+    app.run(host='0.0.0.0', port=8080, debug=False, use_reloader=False)
+
+def run_bot():
+    """Run bot with error handling and auto-restart"""
+    while True:
+        try:
+            print("🤖 Starting Telegram Bot...")
+            bot.infinity_polling(timeout=60, long_polling_timeout=60)
+        except Exception as e:
+            print(f"Bot crashed: {e}")
+            print("🔄 Restarting bot in 10 seconds...")
+            time.sleep(10)
 
 if __name__ == "__main__":
-    print("🤖 Bot is starting...")
-    bot.remove_webhook()
-    time.sleep(2)
-    bot.infinity_polling()
+    # Start Flask in background thread
+    flask_thread = Thread(target=run_flask, daemon=True)
+    flask_thread.start()
+    
+    # Start bot with auto-restart
+    print("🚀 Starting Bot...")
+    run_bot()
