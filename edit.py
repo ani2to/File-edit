@@ -1,12 +1,13 @@
 import os
 import tempfile
 import time
-from flask import Flask
-from threading import Thread
 from datetime import datetime, date
 import telebot
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardRemove
 from pymongo import MongoClient
+from flask import Flask
+
+app = Flask(__name__)
 
 BOT_TOKEN = os.getenv('BOT_TOKEN')
 MONGODB_URI = os.getenv('MONGODB_URI')
@@ -481,39 +482,23 @@ def broadcast_command(message):
     else:
         bot.send_message(message.chat.id, "❌ **Please reply to a message to broadcast it.** \n\n💡 *Example: Reply to any message with /broadcast*", parse_mode='Markdown')
 
-# ===== FLASK KEEP-ALIVE SETUP =====
-app = Flask(__name__)
-
 @app.route('/')
 def home():
-    return "🤖 Bot is running healthy!"
+    return "🤖 Bot is running!"
 
-@app.route('/health')
-def health():
-    return {"status": "healthy", "users_online": len(logged_users), "timestamp": datetime.now().isoformat()}
-
-def run_flask():
-    port = int(os.environ.get("PORT", 8080))
-    app.run(host='0.0.0.0', port=port, debug=False, use_reloader=False)
+# Start bot polling in background
+import threading
 
 def run_bot():
-    """Run bot with error handling and auto-restart"""
-    while True:
-        try:
-            print("🤖 Starting Telegram Bot...")
-            bot.remove_webhook()
-            time.sleep(2)
-            bot.infinity_polling(timeout=60, long_polling_timeout=60)
-        except Exception as e:
-            print(f"Bot crashed: {e}")
-            print("🔄 Restarting bot in 10 seconds...")
-            time.sleep(10)
+    print("🤖 Starting Telegram Bot...")
+    bot.remove_webhook()
+    time.sleep(2)
+    bot.infinity_polling()
+
+# Start bot in a separate thread
+bot_thread = threading.Thread(target=run_bot, daemon=True)
+bot_thread.start()
 
 if __name__ == "__main__":
-    # Start Flask in background thread
-    flask_thread = Thread(target=run_flask, daemon=True)
-    flask_thread.start()
-    
-    # Start bot with auto-restart
-    print("🚀 Starting Bot...")
-    run_bot()
+    port = int(os.environ.get("PORT", 10000))
+    app.run(host='0.0.0.0', port=port)
