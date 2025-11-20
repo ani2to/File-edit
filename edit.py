@@ -480,7 +480,6 @@ def broadcast_command(message):
         bot.send_message(LOG_CHANNEL_ID, log_message, parse_mode='Markdown')
     else:
         bot.send_message(message.chat.id, "❌ **Please reply to a message to broadcast it.** \n\n💡 *Example: Reply to any message with /broadcast*", parse_mode='Markdown')
-if __name__ == "__main__":
     
 # ===== FLASK KEEP-ALIVE SETUP =====
 app = Flask(__name__)
