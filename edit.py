@@ -5,9 +5,6 @@ from datetime import datetime, date
 import telebot
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardRemove
 from pymongo import MongoClient
-from flask import Flask, request
-
-app = Flask(__name__)
 
 BOT_TOKEN = os.getenv('BOT_TOKEN')
 MONGODB_URI = os.getenv('MONGODB_URI')
@@ -482,31 +479,6 @@ def broadcast_command(message):
     else:
         bot.send_message(message.chat.id, "❌ **Please reply to a message to broadcast it.** \n\n💡 *Example: Reply to any message with /broadcast*", parse_mode='Markdown')
 
-@app.route('/')
-def home():
-    return "🤖 Bot is running!"
-
-@app.route('/webhook', methods=['POST'])
-def webhook():
-    if request.headers.get('content-type') == 'application/json':
-        json_string = request.get_data().decode('utf-8')
-        update = telebot.types.Update.de_json(json_string)
-        bot.process_new_updates([update])
-        return ''
-    else:
-        return 'Invalid content type', 400
-
-port = int(os.environ.get("PORT", 10000))
-
 if __name__ == "__main__":
     print("🤖 Bot is starting...")
-    
-    # Remove any existing webhook
-    bot.remove_webhook()
-    time.sleep(1)
-    
-    webhook_url = "https://file-edit-zygb.onrender.com/webhook"
-    bot.set_webhook(url=webhook_url)
-    
-    print(f"✅ Webhook set to: {webhook_url}")
-    app.run(host="0.0.0.0", port=port)
+    bot.infinity_polling()
