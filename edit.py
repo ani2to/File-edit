@@ -481,4 +481,6 @@ def broadcast_command(message):
 
 if __name__ == "__main__":
     print("🤖 Bot is starting...")
+    bot.remove_webhook()
+    time.sleep(2)
     bot.infinity_polling()
