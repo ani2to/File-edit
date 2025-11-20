@@ -480,7 +480,7 @@ def broadcast_command(message):
         bot.send_message(LOG_CHANNEL_ID, log_message, parse_mode='Markdown')
     else:
         bot.send_message(message.chat.id, "❌ **Please reply to a message to broadcast it.** \n\n💡 *Example: Reply to any message with /broadcast*", parse_mode='Markdown')
-    
+
 # ===== FLASK KEEP-ALIVE SETUP =====
 app = Flask(__name__)
 
@@ -490,16 +490,19 @@ def home():
 
 @app.route('/health')
 def health():
-    return {"status": "healthy", "users_online": len(user_data), "timestamp": datetime.now().isoformat()}
+    return {"status": "healthy", "users_online": len(logged_users), "timestamp": datetime.now().isoformat()}
 
 def run_flask():
-    app.run(host='0.0.0.0', port=8080, debug=False, use_reloader=False)
+    port = int(os.environ.get("PORT", 8080))
+    app.run(host='0.0.0.0', port=port, debug=False, use_reloader=False)
 
 def run_bot():
     """Run bot with error handling and auto-restart"""
     while True:
         try:
             print("🤖 Starting Telegram Bot...")
+            bot.remove_webhook()
+            time.sleep(2)
             bot.infinity_polling(timeout=60, long_polling_timeout=60)
         except Exception as e:
             print(f"Bot crashed: {e}")
