@@ -1,3 +1,4 @@
-pyTelegramBotAPI
-pymongo
-flask
+pytelegrambotapi==4.19.1
+flask==2.3.3
+requests==2.31.0
+pymongo==4.6.3
