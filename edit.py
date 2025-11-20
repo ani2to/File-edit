@@ -1,7 +1,7 @@
 import os
 import tempfile
 import time
-from datetime import datetime, date
+from datetime import datetime, date 
 import telebot
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardRemove
 from pymongo import MongoClient
@@ -479,17 +479,11 @@ if __name__ == "__main__":
     bot.infinity_polling()
 
 from flask import Flask
-from threading import Thread
-
-
-app = Flask('')
+app = Flask(__name__)
 
 @app.route('/')
 def home():
-    return "Bot is running"
+    return "🤖 Bot is running!"
 
-def run_flask():
-    app.run(host='0.0.0.0', port=8080)
-
-def keep_alive():
-    Thread(target=run_flask).start()
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=10000)
