@@ -479,11 +479,23 @@ if __name__ == "__main__":
     bot.infinity_polling()
 
 from flask import Flask
-app = Flask(__name__)
-
 @app.route('/')
 def home():
     return "🤖 Bot is running!"
 
+@app.route('/webhook', methods=['POST'])
+def webhook():
+    if request.headers.get('content-type') == 'application/json':
+        json_string = request.get_data().decode('utf-8')
+        update = telebot.types.Update.de_json(json_string)
+        bot.process_new_updates([update])
+        return ''
+    else:
+        return 'Invalid content type', 400
+
 if __name__ == "__main__":
+    print("🤖 Bot is starting...")
+    bot.remove_webhook()
+    time.sleep(1)
+    bot.set_webhook(url="https://file-edit-zygb.onrender.com/webhook")
     app.run(host="0.0.0.0", port=10000)
