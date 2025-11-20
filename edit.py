@@ -477,7 +477,7 @@ def broadcast_command(message):
 if __name__ == "__main__":
     print("🤖 Bot is starting...")
 
-from flask import Flask
+from flask import Flask, request
 import os
 
 app = Flask(__name__)
@@ -486,10 +486,25 @@ app = Flask(__name__)
 def home():
     return "🤖 Bot is running!"
 
+@app.route('/webhook', methods=['POST'])
+def webhook():
+    if request.headers.get('content-type') == 'application/json':
+        json_string = request.get_data().decode('utf-8')
+        update = telebot.types.Update.de_json(json_string)
+        bot.process_new_updates([update])
+        return ''
+    else:
+        return 'Invalid content type', 400
+
 # Get port from environment variable or default to 10000
 port = int(os.environ.get("PORT", 10000))
 
 if __name__ == "__main__":
     print("🤖 Bot is starting...")
-    # Remove the infinity_polling() line and use this instead:
+    bot.remove_webhook()
+    
+    webhook_url = f"https://file-edit-zygb.onrender.com/webhook"
+    bot.set_webhook(url=webhook_url)
+    
+    print(f"Webhook set to: {webhook_url}")
     app.run(host="0.0.0.0", port=port)
